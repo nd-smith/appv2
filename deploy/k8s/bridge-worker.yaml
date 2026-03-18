@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bridge-claimx
+  labels:
+    app: pipeline
+    component: bridge
+    source: claimx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipeline
+      component: bridge
+      source: claimx
+  template:
+    metadata:
+      labels:
+        app: pipeline
+        component: bridge
+        source: claimx
+    spec:
+      containers:
+        - name: bridge
+          image: pipeline:latest
+          command: ["python", "-m", "pipeline.workers.bridge"]
+          args: ["--source", "claimx"]
+          ports:
+            - name: health
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: pipeline-secrets
+                  key: kafka-bootstrap-servers
+            - name: CLAIMX_EVENTHUB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: pipeline-secrets
+                  key: claimx-eventhub-connection-string
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      terminationGracePeriodSeconds: 30

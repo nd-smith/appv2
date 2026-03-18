@@ -1,0 +1,22 @@
+pipeline:
+  kafka:
+    bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS}"
+    logging_topic: "pipeline.logs"
+    dead_letter_topic: "pipeline.dead-letter"
+
+sources:
+  claimx:
+    source_id: "claimx"
+    eventhub:
+      connection_string: "${CLAIMX_EVENTHUB_CONNECTION_STRING}"
+      consumer_group: "bridge-claimx"
+    kafka:
+      internal_topic: "pipeline.claimx.internal"
+      target_topic: "pipeline.claimx.target"
+      consumer_group: "transform-claimx"
+    schema_ref: "schemas/claimx/v1.json"
+    retry:
+      max_retries: 3
+      initial_backoff_s: 1
+      max_backoff_s: 30
+      backoff_multiplier: 2
