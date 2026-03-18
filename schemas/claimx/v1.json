@@ -1,38 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ClaimX Event",
-  "description": "Schema for ClaimX insurance claim events",
+  "description": "Schema for ClaimX events",
   "type": "object",
-  "required": ["claim_id", "event_type", "timestamp"],
+  "required": ["eventType"],
   "properties": {
-    "claim_id": {
+    "eventType": {
       "type": "string",
-      "description": "Unique identifier for the claim"
+      "description": "Type of ClaimX event"
     },
-    "event_type": {
+    "projectId": {
       "type": "string",
-      "description": "Type of claim event"
+      "description": "ClaimX project identifier"
     },
-    "timestamp": {
+    "taskAssignmentId": {
       "type": "string",
-      "format": "date-time",
-      "description": "When the event occurred (ISO 8601)"
+      "description": "ClaimX task assignment identifier"
     },
-    "policy_number": {
-      "type": "string"
-    },
-    "claimant_name": {
-      "type": "string"
-    },
-    "loss_date": {
+    "mediaId": {
       "type": "string",
-      "format": "date"
+      "description": "ClaimX media identifier"
     },
-    "status": {
-      "type": "string"
+    "mediaIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ClaimX media identifiers associated with the event"
     },
-    "amount": {
-      "type": "number"
+    "masterFileName": {
+      "type": "string",
+      "description": "Master file name for the event payload"
+    },
+    "videoCollaborationId": {
+      "type": "string",
+      "description": "ClaimX video collaboration identifier"
     }
   },
   "additionalProperties": true
