@@ -54,7 +54,7 @@ sources:
         envelope = MessageEnvelope.create(
             source_event_id="evt-1",
             source_id="claimx",
-            payload={"claim_id": "C001"},
+            payload={"eventType": "new_claim"},
         )
         producer.produce(
             topic=internal_topic,
