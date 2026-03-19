@@ -56,9 +56,8 @@ sources:
         producer = KafkaProducer(kafka_bootstrap)
 
         event_data = {
-            "claim_id": "C001",
-            "event_type": "new_claim",
-            "timestamp": "2026-03-18T12:00:00Z",
+            "eventType": "new_claim",
+            "projectId": "P001",
         }
         envelope = MessageEnvelope.create(
             source_event_id="evt-100",

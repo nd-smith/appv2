@@ -11,7 +11,7 @@ class TestMessageEnvelopeCreate:
         env = MessageEnvelope.create(
             source_event_id="evt-1",
             source_id="claimx",
-            payload={"claim_id": "C001"},
+            payload={"eventType": "new_claim"},
         )
         # Should be a valid UUID v4
         parsed = uuid.UUID(env.correlation_id)
@@ -21,11 +21,11 @@ class TestMessageEnvelopeCreate:
         env = MessageEnvelope.create(
             source_event_id="evt-1",
             source_id="claimx",
-            payload={"claim_id": "C001"},
+            payload={"eventType": "new_claim"},
         )
         assert env.source_event_id == "evt-1"
         assert env.source_id == "claimx"
-        assert env.payload == {"claim_id": "C001"}
+        assert env.payload == {"eventType": "new_claim"}
 
     def test_create_sets_defaults(self):
         env = MessageEnvelope.create(
