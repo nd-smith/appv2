@@ -21,7 +21,7 @@ sources:
     source_id: "claimx"
     eventhub:
       connection_string: "Endpoint=sb://test"
-      consumer_group: "bridge-claimx"
+      consumer_group: "propgateway-cx-bridge"
     kafka:
       internal_topic: "pipeline.claimx.internal"
       target_topic: "pipeline.claimx.target"
@@ -59,7 +59,7 @@ sources:
     source_id: "claimx"
     eventhub:
       connection_string: "${TEST_EH_CONN}"
-      consumer_group: "bridge-claimx"
+      consumer_group: "propgateway-cx-bridge"
     kafka:
       internal_topic: "pipeline.claimx.internal"
       target_topic: "pipeline.claimx.target"
@@ -103,7 +103,7 @@ sources:
     source_id: "claimx"
     eventhub:
       connection_string: "conn1"
-      consumer_group: "bridge-claimx"
+      consumer_group: "propgateway-cx-bridge"
     kafka:
       internal_topic: "pipeline.claimx.internal"
       target_topic: "pipeline.claimx.target"

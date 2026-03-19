@@ -38,7 +38,7 @@ sources:
     source_id: "claimx"
     eventhub:
       connection_string: "mock"
-      consumer_group: "bridge-claimx"
+      consumer_group: "propgateway-cx-bridge"
     kafka:
       internal_topic: "{internal_topic}"
       target_topic: "{target_topic}"
