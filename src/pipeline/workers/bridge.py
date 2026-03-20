@@ -42,6 +42,7 @@ class BridgeWorker(BaseWorker):
         self._eh_consumer = EventHubConsumer(
             connection_string=self.source_config.eventhub.connection_string,
             consumer_group=self.source_config.eventhub.consumer_group,
+            eventhub_name=self.source_config.eventhub.eventhub_name,
         )
 
         self.health_registry.register("kafka", lambda: (self._kafka_ready, "connected"))

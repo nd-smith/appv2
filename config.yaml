@@ -10,6 +10,7 @@ sources:
     eventhub:
       connection_string: "${CLAIMX_EVENTHUB_CONNECTION_STRING}"
       consumer_group: "propgateway-cx-bridge"
+      eventhub_name: "${CLAIMX_EVENTHUB_NAME}"
     kafka:
       internal_topic: "pipeline.claimx.internal"
       target_topic: "pipeline.claimx.target"

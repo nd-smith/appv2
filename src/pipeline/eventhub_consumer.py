@@ -9,19 +9,23 @@ logger = structlog.get_logger()
 class EventHubConsumer:
     """Wraps azure-eventhub EventHubConsumerClient for consuming events."""
 
-    def __init__(self, connection_string: str, consumer_group: str):
+    def __init__(self, connection_string: str, consumer_group: str, eventhub_name: str = ""):
         self._connection_string = connection_string
         self._consumer_group = consumer_group
+        self._eventhub_name = eventhub_name
         self._client: EventHubConsumerClient | None = None
         self._on_event_callback = None
 
     def start(self, on_event) -> None:
         """Start receiving events. on_event(event_data: dict, event_id: str) is called per event."""
         self._on_event_callback = on_event
-        self._client = EventHubConsumerClient.from_connection_string(
-            conn_str=self._connection_string,
-            consumer_group=self._consumer_group,
-        )
+        kwargs = {
+            "conn_str": self._connection_string,
+            "consumer_group": self._consumer_group,
+        }
+        if self._eventhub_name:
+            kwargs["eventhub_name"] = self._eventhub_name
+        self._client = EventHubConsumerClient.from_connection_string(**kwargs)
         logger.info(
             "eventhub_consumer_started",
             consumer_group=self._consumer_group,
