@@ -1,5 +1,6 @@
 """Event Hub consumer wrapper around azure-eventhub SDK."""
 
+import os
 import ssl
 
 import structlog
@@ -27,9 +28,11 @@ class EventHubConsumer:
         }
         if self._eventhub_name:
             kwargs["eventhub_name"] = self._eventhub_name
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+        ca_bundle = os.environ.get(
+            "SSL_CA_BUNDLE",
+            "/Users/nsmkd/Documents/certs/cacerts.pem",
+        )
+        ssl_context = ssl.create_default_context(cafile=ca_bundle)
         kwargs["ssl_context"] = ssl_context
         self._client = EventHubConsumerClient.from_connection_string(**kwargs)
         logger.info(
