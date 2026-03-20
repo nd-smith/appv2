@@ -23,6 +23,7 @@ class RetryConfig:
 class EventHubConfig:
     connection_string: str = ""
     consumer_group: str = ""
+    eventhub_name: str = ""
 
 
 @dataclass
