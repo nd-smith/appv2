@@ -39,10 +39,13 @@ class BridgeWorker(BaseWorker):
         self.log_sink.set_producer(self._producer)
         self._kafka_ready = True
 
+        import os
+
         self._eh_consumer = EventHubConsumer(
             connection_string=self.source_config.eventhub.connection_string,
             consumer_group=self.source_config.eventhub.consumer_group,
             eventhub_name=self.source_config.eventhub.eventhub_name,
+            use_websockets=os.environ.get("EVENTHUB_USE_WEBSOCKETS", "").lower() in ("1", "true", "yes"),
         )
 
         self.health_registry.register("kafka", lambda: (self._kafka_ready, "connected"))
