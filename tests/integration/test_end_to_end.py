@@ -57,7 +57,7 @@ sources:
 
         event_data = {
             "eventType": "new_claim",
-            "projectId": "P001",
+            "projectId": 1001,
         }
         envelope = MessageEnvelope.create(
             source_event_id="evt-100",

@@ -56,7 +56,7 @@ sources:
         # Simulate what bridge._on_event does
         event_data = {
             "eventType": "new_claim",
-            "projectId": "P001",
+            "projectId": 1001,
         }
         envelope = MessageEnvelope.create(
             source_event_id="evt-1",

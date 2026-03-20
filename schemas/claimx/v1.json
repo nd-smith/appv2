@@ -10,21 +10,21 @@
       "description": "Type of ClaimX event"
     },
     "projectId": {
-      "type": "string",
+      "type": "integer",
       "description": "ClaimX project identifier"
     },
     "taskAssignmentId": {
-      "type": "string",
+      "type": "integer",
       "description": "ClaimX task assignment identifier"
     },
     "mediaId": {
-      "type": "string",
+      "type": "integer",
       "description": "ClaimX media identifier"
     },
     "mediaIds": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "integer"
       },
       "description": "ClaimX media identifiers associated with the event"
     },
@@ -33,8 +33,12 @@
       "description": "Master file name for the event payload"
     },
     "videoCollaborationId": {
-      "type": "string",
+      "type": "integer",
       "description": "ClaimX video collaboration identifier"
+    },
+    "message": {
+      "type": "string",
+      "description": "Additional message details for the event"
     }
   },
   "additionalProperties": true
