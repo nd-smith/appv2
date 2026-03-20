@@ -1,14 +1,18 @@
 """Base worker framework with lifecycle management, signal handling, and health server."""
 
+import os
 import signal
 import sys
+import threading
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 import structlog
 
 from pipeline.config import PipelineConfig, SourceConfig, load_config
 from pipeline.health import HealthCheckRegistry, HealthServer
 from pipeline.logging import KafkaLogSink, LogEvent, configure_structlog
+from pipeline.status import StatusPrinter, WorkerStats
 
 logger = structlog.get_logger()
 
@@ -22,7 +26,7 @@ class BaseWorker(ABC):
     """
 
     def __init__(self, source_id: str, worker_type: str, config_path: str = "config.yaml",
-                 health_port: int = 8080):
+                 health_port: int = 8080, status_interval: int | None = None):
         configure_structlog()
         self._config = load_config(config_path)
         self._source_config = self._config.sources[source_id]
@@ -33,6 +37,16 @@ class BaseWorker(ABC):
         self._health_registry = HealthCheckRegistry()
         self._health_server = HealthServer(port=health_port, registry=self._health_registry)
         self._log_sink = KafkaLogSink(topic=self._config.kafka.logging_topic)
+
+        self._stats = WorkerStats()
+        self._stats_lock = threading.Lock()
+        interval = status_interval or int(os.environ.get("STATUS_INTERVAL_SECONDS", "60"))
+        self._status_printer = StatusPrinter(
+            stats_fn=self._get_status_snapshot,
+            source_id=source_id,
+            worker_type=worker_type,
+            interval=interval,
+        )
 
         self._logger = structlog.get_logger(
             source_id=source_id,
@@ -88,12 +102,34 @@ class BaseWorker(ABC):
         signal.signal(signal.SIGTERM, handle_signal)
         signal.signal(signal.SIGINT, handle_signal)
 
+    def _record_message(self) -> None:
+        """Record a successfully processed message."""
+        with self._stats_lock:
+            self._stats.messages_processed += 1
+            self._stats.last_message_at = datetime.now(timezone.utc)
+
+    def _record_error(self) -> None:
+        """Record a processing error."""
+        with self._stats_lock:
+            self._stats.errors += 1
+
+    def _get_status_snapshot(self) -> dict:
+        """Return a point-in-time copy of stats for the status printer."""
+        with self._stats_lock:
+            return {
+                "started_at": self._stats.started_at,
+                "messages_processed": self._stats.messages_processed,
+                "errors": self._stats.errors,
+                "last_message_at": self._stats.last_message_at,
+            }
+
     def run(self) -> None:
         """Main entry point. Manages full lifecycle."""
         self._logger.info("worker_starting")
         self._setup_signals()
         self._health_server.start()
         self._logger.info("health_server_started")
+        self._status_printer.start()
 
         try:
             self.setup()
@@ -105,6 +141,7 @@ class BaseWorker(ABC):
             sys.exit(1)
         finally:
             self._logger.info("worker_shutting_down")
+            self._status_printer.stop()
             self.shutdown()
             self._health_server.stop()
             self._logger.info("worker_stopped")

@@ -17,12 +17,14 @@ logger = structlog.get_logger()
 class TransformWorker(BaseWorker):
     """Transform worker consuming from internal topic and producing to target topic."""
 
-    def __init__(self, source_id: str, config_path: str = "config.yaml", health_port: int = 8080):
+    def __init__(self, source_id: str, config_path: str = "config.yaml", health_port: int = 8080,
+                 status_interval: int | None = None):
         super().__init__(
             source_id=source_id,
             worker_type="transform",
             config_path=config_path,
             health_port=health_port,
+            status_interval=status_interval,
         )
         self._producer: KafkaProducer | None = None
         self._consumer: KafkaConsumer | None = None
@@ -76,6 +78,7 @@ class TransformWorker(BaseWorker):
                 value=envelope.to_json(),
                 key=envelope.correlation_id,
             )
+            self._record_message()
             self._emit_log(
                 stage="transform",
                 event_type="emit_success",
@@ -84,6 +87,7 @@ class TransformWorker(BaseWorker):
                 correlation_id=envelope.correlation_id,
             )
         except Exception as e:
+            self._record_error()
             self._emit_log(
                 stage="transform",
                 event_type="emit_failed",
@@ -109,12 +113,15 @@ def main():
     parser.add_argument("--source", required=True, help="Source ID from config.yaml")
     parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
     parser.add_argument("--health-port", type=int, default=8080, help="Health server port")
+    parser.add_argument("--status-interval", type=int, default=None,
+                        help="Status print interval in seconds (default: 60, or STATUS_INTERVAL_SECONDS env)")
     args = parser.parse_args()
 
     worker = TransformWorker(
         source_id=args.source,
         config_path=args.config,
         health_port=args.health_port,
+        status_interval=args.status_interval,
     )
     worker.run()
 
