@@ -4,7 +4,7 @@ import os
 import ssl
 
 import structlog
-from azure.eventhub import EventHubConsumerClient
+from azure.eventhub import EventHubConsumerClient, TransportType
 
 logger = structlog.get_logger()
 
@@ -12,10 +12,17 @@ logger = structlog.get_logger()
 class EventHubConsumer:
     """Wraps azure-eventhub EventHubConsumerClient for consuming events."""
 
-    def __init__(self, connection_string: str, consumer_group: str, eventhub_name: str = ""):
+    def __init__(
+        self,
+        connection_string: str,
+        consumer_group: str,
+        eventhub_name: str = "",
+        use_websockets: bool = False,
+    ):
         self._connection_string = connection_string
         self._consumer_group = consumer_group
         self._eventhub_name = eventhub_name
+        self._use_websockets = use_websockets
         self._client: EventHubConsumerClient | None = None
         self._on_event_callback = None
 
@@ -28,12 +35,17 @@ class EventHubConsumer:
         }
         if self._eventhub_name:
             kwargs["eventhub_name"] = self._eventhub_name
-        ca_bundle = os.environ.get(
-            "SSL_CA_BUNDLE",
-            "/Users/nsmkd/Documents/certs/cacerts.pem",
-        )
-        ssl_context = ssl.create_default_context(cafile=ca_bundle)
+        ca_bundle = os.environ.get("SSL_CA_BUNDLE", "")
+        if ca_bundle and os.path.isfile(ca_bundle):
+            ssl_context = ssl.create_default_context(cafile=ca_bundle)
+            logger.info("ssl_custom_ca_loaded", ca_bundle=ca_bundle)
+        else:
+            ssl_context = ssl.create_default_context()
+            logger.info("ssl_using_system_ca")
         kwargs["ssl_context"] = ssl_context
+        if self._use_websockets:
+            kwargs["transport_type"] = TransportType.AmqpOverWebsocket
+            logger.info("eventhub_transport", transport="AmqpOverWebsocket")
         self._client = EventHubConsumerClient.from_connection_string(**kwargs)
         logger.info(
             "eventhub_consumer_started",
