@@ -1,5 +1,7 @@
 """Event Hub consumer wrapper around azure-eventhub SDK."""
 
+import ssl
+
 import structlog
 from azure.eventhub import EventHubConsumerClient
 
@@ -25,6 +27,10 @@ class EventHubConsumer:
         }
         if self._eventhub_name:
             kwargs["eventhub_name"] = self._eventhub_name
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        kwargs["connection_verify"] = ssl_context
         self._client = EventHubConsumerClient.from_connection_string(**kwargs)
         logger.info(
             "eventhub_consumer_started",
