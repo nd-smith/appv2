@@ -2,7 +2,6 @@
 
 import os
 import ssl
-from pathlib import Path
 
 import structlog
 from azure.eventhub import EventHubConsumerClient
@@ -31,7 +30,7 @@ class EventHubConsumer:
             kwargs["eventhub_name"] = self._eventhub_name
         ca_bundle = os.environ.get(
             "SSL_CA_BUNDLE",
-            str(Path(__file__).resolve().parents[2] / "certs" / "cacerts.pem"),
+            "/Users/nsmkd/Documents/certs/cacerts.pem",
         )
         ssl_context = ssl.create_default_context(cafile=ca_bundle)
         kwargs["ssl_context"] = ssl_context
