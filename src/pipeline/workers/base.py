@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 
 import structlog
+from dotenv import load_dotenv
 
 from pipeline.config import PipelineConfig, SourceConfig, load_config
 from pipeline.health import HealthCheckRegistry, HealthServer
@@ -27,6 +28,7 @@ class BaseWorker(ABC):
 
     def __init__(self, source_id: str, worker_type: str, config_path: str = "config.yaml",
                  health_port: int = 8080, status_interval: int | None = None):
+        load_dotenv()
         configure_structlog()
         self._config = load_config(config_path)
         self._source_config = self._config.sources[source_id]
