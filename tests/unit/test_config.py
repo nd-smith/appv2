@@ -2,6 +2,7 @@
 
 
 from pipeline.config import (
+    KafkaAuthConfig,
     load_config,
 )
 
@@ -133,3 +134,94 @@ sources:
         config = load_config(str(config_file))
         assert len(config.sources) == 2
         assert config.sources["validate"].retry.max_retries == 5
+
+
+class TestKafkaAuthConfig:
+    def test_empty_auth_returns_empty_dict(self):
+        auth = KafkaAuthConfig()
+        assert auth.to_librdkafka_config() == {}
+
+    def test_unresolved_env_var_returns_empty_dict(self):
+        auth = KafkaAuthConfig(security_protocol="${UNSET_VAR}")
+        assert auth.to_librdkafka_config() == {}
+
+    def test_full_auth_config(self):
+        auth = KafkaAuthConfig(
+            security_protocol="SASL_SSL",
+            sasl_mechanism="OAUTHBEARER",
+            sasl_oauthbearer_method="oidc",
+            sasl_oauthbearer_client_id="my-client-id",
+            sasl_oauthbearer_client_secret="my-secret",
+            sasl_oauthbearer_token_endpoint_url="https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+            sasl_oauthbearer_scope="api://kafka/.default",
+        )
+        result = auth.to_librdkafka_config()
+        assert result == {
+            "security.protocol": "SASL_SSL",
+            "sasl.mechanism": "OAUTHBEARER",
+            "sasl.oauthbearer.method": "oidc",
+            "sasl.oauthbearer.client.id": "my-client-id",
+            "sasl.oauthbearer.client.secret": "my-secret",
+            "sasl.oauthbearer.token.endpoint.url": "https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+            "sasl.oauthbearer.scope": "api://kafka/.default",
+        }
+
+    def test_skips_unresolved_optional_fields(self):
+        auth = KafkaAuthConfig(
+            security_protocol="SASL_SSL",
+            sasl_mechanism="OAUTHBEARER",
+            sasl_oauthbearer_method="oidc",
+            sasl_oauthbearer_client_id="my-client-id",
+            sasl_oauthbearer_client_secret="my-secret",
+            sasl_oauthbearer_token_endpoint_url="https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
+            sasl_oauthbearer_scope="${KAFKA_OAUTH_SCOPE}",
+        )
+        result = auth.to_librdkafka_config()
+        assert "sasl.oauthbearer.scope" not in result
+        assert result["sasl.oauthbearer.client.id"] == "my-client-id"
+
+    def test_load_config_with_auth(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TEST_CLIENT_ID", "loaded-client-id")
+        monkeypatch.setenv("TEST_CLIENT_SECRET", "loaded-secret")
+        monkeypatch.setenv("TEST_TOKEN_URL", "https://login.microsoftonline.com/t/oauth2/v2.0/token")
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text("""
+pipeline:
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    logging_topic: "pipeline.logs"
+    dead_letter_topic: "pipeline.dead-letter"
+    auth:
+      security_protocol: "SASL_SSL"
+      sasl_mechanism: "OAUTHBEARER"
+      sasl_oauthbearer_method: "oidc"
+      sasl_oauthbearer_client_id: "${TEST_CLIENT_ID}"
+      sasl_oauthbearer_client_secret: "${TEST_CLIENT_SECRET}"
+      sasl_oauthbearer_token_endpoint_url: "${TEST_TOKEN_URL}"
+      sasl_oauthbearer_scope: "${UNSET_SCOPE}"
+
+sources: {}
+""")
+        config = load_config(str(config_file))
+        assert config.kafka.auth.security_protocol == "SASL_SSL"
+        assert config.kafka.auth.sasl_oauthbearer_client_id == "loaded-client-id"
+        assert config.kafka.auth.sasl_oauthbearer_scope == "${UNSET_SCOPE}"
+
+        rdkafka = config.kafka.auth.to_librdkafka_config()
+        assert rdkafka["sasl.oauthbearer.client.id"] == "loaded-client-id"
+        assert "sasl.oauthbearer.scope" not in rdkafka
+
+    def test_load_config_without_auth(self, tmp_path):
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text("""
+pipeline:
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    logging_topic: "pipeline.logs"
+    dead_letter_topic: "pipeline.dead-letter"
+
+sources: {}
+""")
+        config = load_config(str(config_file))
+        assert config.kafka.auth.to_librdkafka_config() == {}

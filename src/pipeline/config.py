@@ -43,10 +43,44 @@ class SourceConfig:
 
 
 @dataclass
+class KafkaAuthConfig:
+    security_protocol: str = ""
+    sasl_mechanism: str = ""
+    sasl_oauthbearer_method: str = ""
+    sasl_oauthbearer_client_id: str = ""
+    sasl_oauthbearer_client_secret: str = ""
+    sasl_oauthbearer_token_endpoint_url: str = ""
+    sasl_oauthbearer_scope: str = ""
+
+    _FIELD_MAP = {
+        "sasl_oauthbearer_method": "sasl.oauthbearer.method",
+        "sasl_oauthbearer_client_id": "sasl.oauthbearer.client.id",
+        "sasl_oauthbearer_client_secret": "sasl.oauthbearer.client.secret",
+        "sasl_oauthbearer_token_endpoint_url": "sasl.oauthbearer.token.endpoint.url",
+        "sasl_oauthbearer_scope": "sasl.oauthbearer.scope",
+    }
+
+    def to_librdkafka_config(self) -> dict:
+        """Convert to librdkafka property names. Returns empty dict if auth is not configured."""
+        if not self.security_protocol or self.security_protocol.startswith("${"):
+            return {}
+        config = {
+            "security.protocol": self.security_protocol,
+            "sasl.mechanism": self.sasl_mechanism,
+        }
+        for attr, kafka_key in self._FIELD_MAP.items():
+            val = getattr(self, attr)
+            if val and not val.startswith("${"):
+                config[kafka_key] = val
+        return config
+
+
+@dataclass
 class PipelineKafkaConfig:
     bootstrap_servers: str = ""
     logging_topic: str = "pipeline.logs"
     dead_letter_topic: str = "pipeline.dead-letter"
+    auth: KafkaAuthConfig = field(default_factory=KafkaAuthConfig)
 
 
 @dataclass
@@ -119,12 +153,13 @@ def load_config(config_path: str | Path = "config.yaml") -> PipelineConfig:
 
     pipeline_data = raw.get("pipeline", {})
     kafka_data = pipeline_data.get("kafka", {})
+    auth_data = kafka_data.pop("auth", {})
 
     sources = {}
     for name, source_data in raw.get("sources", {}).items():
         sources[name] = _build_source_config(source_data)
 
     return PipelineConfig(
-        kafka=PipelineKafkaConfig(**kafka_data),
+        kafka=PipelineKafkaConfig(**kafka_data, auth=KafkaAuthConfig(**auth_data)),
         sources=sources,
     )

@@ -3,6 +3,14 @@ pipeline:
     bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS}"
     logging_topic: "pipeline.logs"
     dead_letter_topic: "pipeline.dead-letter"
+    auth:
+      security_protocol: "SASL_SSL"
+      sasl_mechanism: "OAUTHBEARER"
+      sasl_oauthbearer_method: "oidc"
+      sasl_oauthbearer_client_id: "${KAFKA_OAUTH_CLIENT_ID}"
+      sasl_oauthbearer_client_secret: "${KAFKA_OAUTH_CLIENT_SECRET}"
+      sasl_oauthbearer_token_endpoint_url: "${KAFKA_OAUTH_TOKEN_URL}"
+      sasl_oauthbearer_scope: "${KAFKA_OAUTH_SCOPE}"
 
 sources:
   claimx:

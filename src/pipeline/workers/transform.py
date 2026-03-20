@@ -32,13 +32,15 @@ class TransformWorker(BaseWorker):
 
     def setup(self) -> None:
         """Initialize Kafka producer and consumer."""
-        self._producer = KafkaProducer(self.config.kafka.bootstrap_servers)
+        auth_config = self.config.kafka.auth.to_librdkafka_config()
+        self._producer = KafkaProducer(self.config.kafka.bootstrap_servers, **auth_config)
         self.log_sink.set_producer(self._producer)
 
         self._consumer = KafkaConsumer(
             bootstrap_servers=self.config.kafka.bootstrap_servers,
             group_id=self.source_config.kafka.consumer_group,
             topics=[self.source_config.kafka.internal_topic],
+            **auth_config,
         )
         self._consumer.subscribe()
         self._kafka_ready = True
