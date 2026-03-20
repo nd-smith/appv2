@@ -27,7 +27,7 @@ class EventHubConsumer:
         }
         if self._eventhub_name:
             kwargs["eventhub_name"] = self._eventhub_name
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
         kwargs["ssl_context"] = ssl_context
