@@ -96,9 +96,21 @@ def _build_source_config(data: dict) -> SourceConfig:
     )
 
 
+def _find_project_root() -> Path:
+    """Walk up from this file to find the project root (contains config.yaml)."""
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        if (current / "config.yaml").exists():
+            return current
+        current = current.parent
+    return Path.cwd()
+
+
 def load_config(config_path: str | Path = "config.yaml") -> PipelineConfig:
     """Load and parse the pipeline configuration from YAML."""
     path = Path(config_path)
+    if not path.is_absolute() and not path.exists():
+        path = _find_project_root() / path
     with open(path) as f:
         raw = yaml.safe_load(f)
 
