@@ -28,11 +28,13 @@ class EventHubConsumer:
         }
         if self._eventhub_name:
             kwargs["eventhub_name"] = self._eventhub_name
-        ca_bundle = os.environ.get(
-            "SSL_CA_BUNDLE",
-            "/Users/nsmkd/Documents/certs/cacerts.pem",
-        )
-        ssl_context = ssl.create_default_context(cafile=ca_bundle)
+        ca_bundle = os.environ.get("SSL_CA_BUNDLE", "")
+        if ca_bundle and os.path.isfile(ca_bundle):
+            ssl_context = ssl.create_default_context(cafile=ca_bundle)
+            logger.info("ssl_custom_ca_loaded", ca_bundle=ca_bundle)
+        else:
+            ssl_context = ssl.create_default_context()
+            logger.info("ssl_using_system_ca")
         kwargs["ssl_context"] = ssl_context
         self._client = EventHubConsumerClient.from_connection_string(**kwargs)
         logger.info(
