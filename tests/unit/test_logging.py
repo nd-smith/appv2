@@ -104,6 +104,69 @@ class TestKafkaLogSink:
         parsed = json.loads(captured.err)
         assert parsed["correlation_id"] == "abc-123"
 
+    def test_send_error_also_prints_to_stdout(self, capsys):
+        mock_producer = MagicMock()
+        sink = KafkaLogSink(producer=mock_producer, topic="pipeline.logs")
+
+        event = LogEvent.create(
+            correlation_id="err-123",
+            source_id="claimx",
+            worker_type="bridge",
+            stage="bridge",
+            event_type="processing_failed",
+            level="ERROR",
+            detail="something broke",
+            worker_id="pod-1",
+        )
+        sink.send(event)
+
+        mock_producer.produce.assert_called_once()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["correlation_id"] == "err-123"
+        assert parsed["level"] == "ERROR"
+
+    def test_send_critical_also_prints_to_stdout(self, capsys):
+        mock_producer = MagicMock()
+        sink = KafkaLogSink(producer=mock_producer, topic="pipeline.logs")
+
+        event = LogEvent.create(
+            correlation_id="crit-456",
+            source_id="claimx",
+            worker_type="bridge",
+            stage="bridge",
+            event_type="worker_crash",
+            level="CRITICAL",
+            detail="fatal error",
+            worker_id="pod-1",
+        )
+        sink.send(event)
+
+        mock_producer.produce.assert_called_once()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["correlation_id"] == "crit-456"
+        assert parsed["level"] == "CRITICAL"
+
+    def test_send_info_does_not_print_to_stdout(self, capsys):
+        mock_producer = MagicMock()
+        sink = KafkaLogSink(producer=mock_producer, topic="pipeline.logs")
+
+        event = LogEvent.create(
+            correlation_id="info-789",
+            source_id="claimx",
+            worker_type="bridge",
+            stage="bridge",
+            event_type="test",
+            level="INFO",
+            detail="all good",
+            worker_id="pod-1",
+        )
+        sink.send(event)
+
+        captured = capsys.readouterr()
+        assert captured.out == ""
+
     def test_set_producer(self):
         sink = KafkaLogSink(producer=None)
         mock_producer = MagicMock()

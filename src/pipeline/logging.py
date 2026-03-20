@@ -71,14 +71,18 @@ class KafkaLogSink:
 
     def send(self, log_event: LogEvent) -> None:
         import json
+        import sys
 
         data = log_event.to_dict()
-        if self._producer:
-            self._producer.produce(self._topic, json.dumps(data))
-        else:
-            import sys
+        json_str = json.dumps(data)
 
-            print(json.dumps(data), file=sys.stderr)
+        if self._producer:
+            self._producer.produce(self._topic, json_str)
+        else:
+            print(json_str, file=sys.stderr)
+
+        if log_event.level in ("ERROR", "CRITICAL"):
+            print(json_str, file=sys.stdout)
 
 
 def configure_structlog() -> None:
